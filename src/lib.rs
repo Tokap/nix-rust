@@ -11,6 +11,8 @@ extern crate core;
 // Re-export some libc constants
 pub use libc::{c_int, c_void};
 
+pub mod nix;
+
 #[cfg(unix)]
 pub use errno::{SysResult, SysError};
 
