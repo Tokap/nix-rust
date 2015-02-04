@@ -15,9 +15,6 @@ pub mod nix;
 pub use nix::{NixResult, NixError};
 
 #[cfg(unix)]
-pub use errno::{SysResult, SysError};
-
-#[cfg(unix)]
 pub mod errno;
 
 #[cfg(unix)]

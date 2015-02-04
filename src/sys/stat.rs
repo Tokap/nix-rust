@@ -3,11 +3,11 @@ pub use libc::stat as FileStat;
 
 use std::fmt;
 use std::mem;
-use std::old_path::Path;
+use errno;
 use libc::mode_t;
-use errno::{SysResult, SysError, from_ffi};
 use fcntl::Fd;
 use utils::ToCStr;
+use {NixError, NixResult};
 
 mod ffi {
     use libc::{c_char, c_int, mode_t, dev_t};
@@ -58,9 +58,9 @@ impl fmt::Debug for SFlag {
     }
 }
 
-pub fn mknod(path: &Path, kind: SFlag, perm: Mode, dev: dev_t) -> SysResult<()> {
+pub fn mknod(path: &Path, kind: SFlag, perm: Mode, dev: dev_t) -> NixResult<()> {
     let res = unsafe { ffi::mknod(path.to_c_str().as_ptr(), kind.bits | perm.bits() as mode_t, dev) };
-    from_ffi(res)
+    errno::from_ffi(res)
 }
 
 #[cfg(target_os = "linux")]
@@ -76,23 +76,23 @@ pub fn umask(mode: Mode) -> Mode {
     Mode::from_bits(prev).expect("[BUG] umask returned invalid Mode")
 }
 
-pub fn stat(path: &Path) -> SysResult<FileStat> {
+pub fn stat(path: &Path) -> NixResult<FileStat> {
     let mut dst = unsafe { mem::uninitialized() };
     let res = unsafe { ffi::stat(path.to_c_str().as_ptr(), &mut dst as *mut FileStat) };
 
     if res < 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     Ok(dst)
 }
 
-pub fn fstat(fd: Fd) -> SysResult<FileStat> {
+pub fn fstat(fd: Fd) -> NixResult<FileStat> {
     let mut dst = unsafe { mem::uninitialized() };
     let res = unsafe { ffi::fstat(fd, &mut dst as *mut FileStat) };
 
     if res < 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     Ok(dst)

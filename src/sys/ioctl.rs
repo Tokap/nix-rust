@@ -1,6 +1,7 @@
 use libc;
-use errno::{SysResult, from_ffi};
+use errno;
 use fcntl::Fd;
+use {NixError, NixResult};
 
 pub use self::ffi::Winsize;
 pub use self::IoctlArg::*;
@@ -33,10 +34,10 @@ pub enum IoctlArg<'a> {
     TIOCGWINSZ(&'a mut Winsize)
 }
 
-pub fn ioctl(fd: Fd, arg: IoctlArg) -> SysResult<()> {
+pub fn ioctl(fd: Fd, arg: IoctlArg) -> NixResult<()> {
     match arg {
         TIOCGWINSZ(&mut ref winsize) => {
-            from_ffi(unsafe {
+            errno::from_ffi(unsafe {
                 libc::funcs::bsd44::ioctl(fd, ffi::os::TIOCGWINSZ, winsize)
             })
         }

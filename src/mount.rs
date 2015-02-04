@@ -1,7 +1,6 @@
 use std::ptr;
 use std::old_path::Path;
 use libc::{c_ulong, c_int, c_void};
-use errno::{SysResult, from_ffi};
 use utils::ToCStr;
 
 bitflags!(
@@ -73,7 +72,7 @@ pub fn mount(
         target: &Path,
         fstype: Option<&str>,
         flags: MsFlags,
-        data: Option<&str>) -> SysResult<()> {
+        data: Option<&str>) -> NixResult<()> {
 
     let source = source.map(|s| s.to_c_str());
     let target = target.to_c_str();
@@ -89,21 +88,21 @@ pub fn mount(
             data.map(|s| s.as_ptr() as *const c_void).unwrap_or(ptr::null()))
     };
 
-    from_ffi(res)
+    errno::from_ffi(res)
 }
 
-pub fn umount(target: &Path) -> SysResult<()> {
+pub fn umount(target: &Path) -> NixResult<()> {
     let target = target.to_c_str();
 
     let res = unsafe { ffi::umount(target.as_ptr()) };
 
-    from_ffi(res)
+    errno::from_ffi(res)
 }
 
-pub fn umount2(target: &Path, flags: MntFlags) -> SysResult<()> {
+pub fn umount2(target: &Path, flags: MntFlags) -> NixResult<()> {
     let target = target.to_c_str();
 
     let res = unsafe { ffi::umount2(target.as_ptr(), flags.bits) };
 
-    from_ffi(res)
+    errno::from_ffi(res)
 }

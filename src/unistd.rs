@@ -1,9 +1,10 @@
 use std::{mem, ptr};
 use libc::{c_char, c_void, c_int, size_t, pid_t, off_t};
+use errno;
 use fcntl::{fcntl, Fd, OFlag, O_NONBLOCK, O_CLOEXEC, FD_CLOEXEC};
 use fcntl::FcntlArg::{F_SETFD, F_SETFL};
+use {NixError, NixResult};
 
-use errno::{SysResult, SysError, from_ffi};
 use core::raw::Slice as RawSlice;
 use utils::ToCStr;
 use std::ffi::CString; 
@@ -76,13 +77,13 @@ impl Fork {
     }
 }
 
-pub fn fork() -> SysResult<Fork> {
+pub fn fork() -> NixResult<Fork> {
     use self::Fork::*;
 
     let res = unsafe { ffi::fork() };
 
     if res < 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     } else if res == 0 {
         Ok(Child)
     } else {
@@ -97,7 +98,7 @@ pub fn fork() -> SysResult<Fork> {
 // let mut v = Vec::new();
 // let iov = Iovec::from_slice(immutable_vec.as_slice());
 // v.push(iov);
-// let _:SysResult<usize> = readv(fd, v.as_slice());
+// let _:NixResult<usize> = readv(fd, v.as_slice());
 
 // We do not want <T> to appear in ffi functions, so we provide this aliases.
 type IovecR = Iovec<ToRead>;
@@ -143,29 +144,29 @@ impl Iovec<ToRead> {
 
 
 #[inline]
-pub fn dup(oldfd: Fd) -> SysResult<Fd> {
+pub fn dup(oldfd: Fd) -> NixResult<Fd> {
     let res = unsafe { ffi::dup(oldfd) };
 
     if res < 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     Ok(res)
 }
 
 #[inline]
-pub fn dup2(oldfd: Fd, newfd: Fd) -> SysResult<Fd> {
+pub fn dup2(oldfd: Fd, newfd: Fd) -> NixResult<Fd> {
     let res = unsafe { ffi::dup2(oldfd, newfd) };
 
     if res < 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     Ok(res)
 }
 
 #[cfg(not(any(target_os = "macos", target_os = "ios")))]
-pub fn dup3(oldfd: Fd, newfd: Fd, flags: OFlag) -> SysResult<Fd> {
+pub fn dup3(oldfd: Fd, newfd: Fd, flags: OFlag) -> NixResult<Fd> {
     type F = unsafe extern "C" fn(c_int, c_int, c_int) -> c_int;
 
     extern {
@@ -180,7 +181,7 @@ pub fn dup3(oldfd: Fd, newfd: Fd, flags: OFlag) -> SysResult<Fd> {
         };
 
         if res < 0 {
-            return Err(SysError::last());
+            return Err(NixError::Sys(errno::last()));
         }
 
         Ok(res)
@@ -190,16 +191,16 @@ pub fn dup3(oldfd: Fd, newfd: Fd, flags: OFlag) -> SysResult<Fd> {
 }
 
 #[cfg(any(target_os = "macos", target_os = "ios"))]
-pub fn dup3(oldfd: Fd, newfd: Fd, flags: OFlag) -> SysResult<Fd> {
+pub fn dup3(oldfd: Fd, newfd: Fd, flags: OFlag) -> NixResult<Fd> {
     dup3_polyfill(oldfd, newfd, flags)
 }
 
 #[inline]
-fn dup3_polyfill(oldfd: Fd, newfd: Fd, flags: OFlag) -> SysResult<Fd> {
+fn dup3_polyfill(oldfd: Fd, newfd: Fd, flags: OFlag) -> NixResult<Fd> {
     use errno::EINVAL;
 
     if oldfd == newfd {
-        return Err(SysError { kind: EINVAL });
+        return Err(NixError::Sys(errno::EINVAL));
     }
 
     let fd = try!(dup2(oldfd, newfd));
@@ -215,19 +216,19 @@ fn dup3_polyfill(oldfd: Fd, newfd: Fd, flags: OFlag) -> SysResult<Fd> {
 }
 
 #[inline]
-pub fn chdir<S: ToCStr>(path: S) -> SysResult<()> {
+pub fn chdir<S: ToCStr>(path: S) -> NixResult<()> {
     let path = path.to_c_str();
     let res = unsafe { ffi::chdir(path.as_ptr()) };
 
     if res != 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     return Ok(())
 }
 
 #[inline]
-pub fn execve(filename: &CString, args: &[CString], env: &[CString]) -> SysResult<()> {
+pub fn execve(filename: &CString, args: &[CString], env: &[CString]) -> NixResult<()> {
     let mut args_p: Vec<*const c_char> = args.iter().map(|s| s.as_ptr()).collect();
     args_p.push(ptr::null());
 
@@ -239,77 +240,77 @@ pub fn execve(filename: &CString, args: &[CString], env: &[CString]) -> SysResul
     };
 
     if res != 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     unreachable!()
 }
 
-pub fn daemon(nochdir: bool, noclose: bool) -> SysResult<()> {
+pub fn daemon(nochdir: bool, noclose: bool) -> NixResult<()> {
     let res = unsafe { ffi::daemon(nochdir as c_int, noclose as c_int) };
-    from_ffi(res)
+    errno::from_ffi(res)
 }
 
-pub fn sethostname(name: &[u8]) -> SysResult<()> {
+pub fn sethostname(name: &[u8]) -> NixResult<()> {
     let ptr = name.as_ptr() as *const c_char;
     let len = name.len() as size_t;
 
     let res = unsafe { ffi::sethostname(ptr, len) };
-    from_ffi(res)
+    errno::from_ffi(res)
 }
 
-pub fn gethostname(name: &mut [u8]) -> SysResult<()> {
+pub fn gethostname(name: &mut [u8]) -> NixResult<()> {
     let ptr = name.as_mut_ptr() as *mut c_char;
     let len = name.len() as size_t;
 
     let res = unsafe { ffi::gethostname(ptr, len) };
-    from_ffi(res)
+    errno::from_ffi(res)
 }
 
-pub fn close(fd: Fd) -> SysResult<()> {
+pub fn close(fd: Fd) -> NixResult<()> {
     let res = unsafe { ffi::close(fd) };
-    from_ffi(res)
+    errno::from_ffi(res)
 }
 
-pub fn read(fd: Fd, buf: &mut [u8]) -> SysResult<usize> {
+pub fn read(fd: Fd, buf: &mut [u8]) -> NixResult<usize> {
     let res = unsafe { ffi::read(fd, buf.as_mut_ptr() as *mut c_void, buf.len() as size_t) };
 
     if res < 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     return Ok(res as usize)
 }
 
-pub fn write(fd: Fd, buf: &[u8]) -> SysResult<usize> {
+pub fn write(fd: Fd, buf: &[u8]) -> NixResult<usize> {
     let res = unsafe { ffi::write(fd, buf.as_ptr() as *const c_void, buf.len() as size_t) };
 
     if res < 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     return Ok(res as usize)
 }
 
-pub fn writev(fd: Fd, iov: &[Iovec<ToWrite>]) -> SysResult<usize> {
+pub fn writev(fd: Fd, iov: &[Iovec<ToWrite>]) -> NixResult<usize> {
     let res = unsafe { ffi::writev(fd, iov.as_ptr(), iov.len() as c_int) };
     if res < 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     return Ok(res as usize)
 }
 
-pub fn readv(fd: Fd, iov: &mut [Iovec<ToRead>]) -> SysResult<usize> {
+pub fn readv(fd: Fd, iov: &mut [Iovec<ToRead>]) -> NixResult<usize> {
     let res = unsafe { ffi::readv(fd, iov.as_ptr(), iov.len() as c_int) };
     if res < 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     return Ok(res as usize)
 }
 
-pub fn pipe() -> SysResult<(Fd, Fd)> {
+pub fn pipe() -> NixResult<(Fd, Fd)> {
     unsafe {
         let mut res;
         let mut fds: [c_int; 2] = mem::uninitialized();
@@ -317,7 +318,7 @@ pub fn pipe() -> SysResult<(Fd, Fd)> {
         res = ffi::pipe(fds.as_mut_ptr());
 
         if res < 0 {
-            return Err(SysError::last());
+            return Err(NixError::Sys(errno::last()));
         }
 
         Ok((fds[0], fds[1]))
@@ -325,7 +326,7 @@ pub fn pipe() -> SysResult<(Fd, Fd)> {
 }
 
 #[cfg(target_os = "linux")]
-pub fn pipe2(flags: OFlag) -> SysResult<(Fd, Fd)> {
+pub fn pipe2(flags: OFlag) -> NixResult<(Fd, Fd)> {
     type F = unsafe extern "C" fn(fds: *mut c_int, flags: c_int) -> c_int;
 
     extern {
@@ -347,7 +348,7 @@ pub fn pipe2(flags: OFlag) -> SysResult<(Fd, Fd)> {
         }
 
         if res < 0 {
-            return Err(SysError::last());
+            return Err(NixError::Sys(errno::last()));
         }
 
         if !feat_atomic {
@@ -359,7 +360,7 @@ pub fn pipe2(flags: OFlag) -> SysResult<(Fd, Fd)> {
 }
 
 #[cfg(any(target_os = "macos", target_os = "ios"))]
-pub fn pipe2(flags: OFlag) -> SysResult<(Fd, Fd)> {
+pub fn pipe2(flags: OFlag) -> NixResult<(Fd, Fd)> {
     unsafe {
         let mut res;
         let mut fds: [c_int; 2] = mem::uninitialized();
@@ -367,7 +368,7 @@ pub fn pipe2(flags: OFlag) -> SysResult<(Fd, Fd)> {
         res = ffi::pipe(fds.as_mut_ptr());
 
         if res < 0 {
-            return Err(SysError::last());
+            return Err(NixError::Sys(errno::last()));
         }
 
         try!(pipe2_setflags(fds[0], fds[1], flags));
@@ -376,7 +377,7 @@ pub fn pipe2(flags: OFlag) -> SysResult<(Fd, Fd)> {
     }
 }
 
-fn pipe2_setflags(fd1: Fd, fd2: Fd, flags: OFlag) -> SysResult<()> {
+fn pipe2_setflags(fd1: Fd, fd2: Fd, flags: OFlag) -> NixResult<()> {
     let mut res = Ok(());
 
     if flags.contains(O_CLOEXEC) {
@@ -401,25 +402,25 @@ fn pipe2_setflags(fd1: Fd, fd2: Fd, flags: OFlag) -> SysResult<()> {
     }
 }
 
-pub fn ftruncate(fd: Fd, len: off_t) -> SysResult<()> {
+pub fn ftruncate(fd: Fd, len: off_t) -> NixResult<()> {
     if unsafe { ffi::ftruncate(fd, len) } < 0 {
-        Err(SysError::last())
+        Err(NixError::Sys(errno::last()))
     } else {
         Ok(())
     }
 }
 
-pub fn isatty(fd: Fd) -> SysResult<bool> {
-    use {errno, libc};
+pub fn isatty(fd: Fd) -> NixResult<bool> {
+    use libc;
 
     if unsafe { libc::isatty(fd) } == 1 {
         Ok(true)
     } else {
-        match SysError::last() {
+        match errno::last() {
             // ENOTTY means `fd` is a valid file descriptor, but not a TTY, so
             // we return `Ok(false)`
-            SysError { kind: errno::ENOTTY } => Ok(false),
-            err => Err(err)
+            errno::ENOTTY => Ok(false),
+            err => Err(NixError::Sys(err))
         }
     }
 }
@@ -428,10 +429,10 @@ pub fn isatty(fd: Fd) -> SysResult<bool> {
 mod linux {
     use std::old_path::Path;
     use syscall::{syscall, SYSPIVOTROOT};
-    use errno::{SysResult, SysError};
+    use errno::{self, NixResult, SysError};
     use utils::ToCStr;
 
-    pub fn pivot_root(new_root: &Path, put_old: &Path) -> SysResult<()> {
+    pub fn pivot_root(new_root: &Path, put_old: &Path) -> NixResult<()> {
         let new_root = new_root.to_c_str();
         let put_old = put_old.to_c_str();
 
@@ -440,7 +441,7 @@ mod linux {
         };
 
         if res != 0 {
-            return Err(SysError::last());
+            return Err(NixError::Sys(errno::last()));
         }
 
         Ok(())

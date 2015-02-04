@@ -1,6 +1,7 @@
 use std::old_path::Path;
 use libc::{c_int, mode_t};
-use errno::{SysResult, SysError};
+use errno;
+use {NixError, NixResult};
 use sys::stat::Mode;
 use utils::ToCStr;
 
@@ -71,11 +72,11 @@ mod ffi {
     }
 }
 
-pub fn open(path: &Path, oflag: OFlag, mode: Mode) -> SysResult<Fd> {
+pub fn open(path: &Path, oflag: OFlag, mode: Mode) -> NixResult<Fd> {
     let fd = unsafe { ffi::open(path.to_c_str().as_ptr(), oflag.bits(), mode.bits() as mode_t) };
 
     if fd < 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     Ok(fd)
@@ -102,7 +103,7 @@ pub enum FcntlArg<'a> {
 }
 
 // TODO: Figure out how to handle value fcntl returns
-pub fn fcntl(fd: Fd, arg: FcntlArg) -> SysResult<()> {
+pub fn fcntl(fd: Fd, arg: FcntlArg) -> NixResult<()> {
     use self::FcntlArg::*;
 
     let res = unsafe {
@@ -114,7 +115,7 @@ pub fn fcntl(fd: Fd, arg: FcntlArg) -> SysResult<()> {
     };
 
     if res < 0 {
-        return Err(SysError::last());
+        return Err(NixError::Sys(errno::last()));
     }
 
     Ok(())
