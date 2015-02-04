@@ -12,6 +12,7 @@ extern crate core;
 pub use libc::{c_int, c_void};
 
 pub mod nix;
+pub use nix::{NixResult, NixError};
 
 #[cfg(unix)]
 pub use errno::{SysResult, SysError};
