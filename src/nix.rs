@@ -3,6 +3,8 @@ use std;
 
 use errno::Errno;
 
+pub type NixResult<T> = Result<T, NixError>;
+
 #[derive(Copy)]
 pub enum NixError {
     Sys(Errno),
