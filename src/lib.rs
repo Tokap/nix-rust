@@ -12,7 +12,7 @@ extern crate core;
 pub use libc::{c_int, c_void};
 
 pub mod nix;
-pub use nix::{NixResult, NixError};
+pub use nix::{NixResult, NixError, NixPath};
 
 #[cfg(unix)]
 pub mod errno;
@@ -37,5 +37,3 @@ pub mod syscall;
 
 #[cfg(unix)]
 pub mod unistd;
-
-mod utils;

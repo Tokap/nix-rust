@@ -6,8 +6,7 @@ use std::mem;
 use errno;
 use libc::mode_t;
 use fcntl::Fd;
-use utils::ToCStr;
-use {NixError, NixResult};
+use {NixError, NixResult, NixPath};
 
 mod ffi {
     use libc::{c_char, c_int, mode_t, dev_t};
@@ -58,8 +57,12 @@ impl fmt::Debug for SFlag {
     }
 }
 
-pub fn mknod(path: &Path, kind: SFlag, perm: Mode, dev: dev_t) -> NixResult<()> {
-    let res = unsafe { ffi::mknod(path.to_c_str().as_ptr(), kind.bits | perm.bits() as mode_t, dev) };
+pub fn mknod<P: NixPath>(path: P, kind: SFlag, perm: Mode, dev: dev_t) -> NixResult<()> {
+    let res = try!(path.with_nix_path(|ptr| {
+        unsafe {
+            ffi::mknod(ptr, kind.bits | perm.bits() as mode_t, dev)
+        }
+    }));
     errno::from_ffi(res)
 }
 
@@ -76,9 +79,13 @@ pub fn umask(mode: Mode) -> Mode {
     Mode::from_bits(prev).expect("[BUG] umask returned invalid Mode")
 }
 
-pub fn stat(path: &Path) -> NixResult<FileStat> {
+pub fn stat<P: NixPath>(path: P) -> NixResult<FileStat> {
     let mut dst = unsafe { mem::uninitialized() };
-    let res = unsafe { ffi::stat(path.to_c_str().as_ptr(), &mut dst as *mut FileStat) };
+    let res = try!(path.with_nix_path(|ptr| {
+        unsafe {
+            ffi::stat(ptr, &mut dst as *mut FileStat)
+        }
+    }));
 
     if res < 0 {
         return Err(NixError::Sys(errno::last()));

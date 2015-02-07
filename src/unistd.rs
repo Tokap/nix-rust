@@ -3,10 +3,9 @@ use libc::{c_char, c_void, c_int, size_t, pid_t, off_t};
 use errno;
 use fcntl::{fcntl, Fd, OFlag, O_NONBLOCK, O_CLOEXEC, FD_CLOEXEC};
 use fcntl::FcntlArg::{F_SETFD, F_SETFL};
-use {NixError, NixResult};
+use {NixError, NixResult, NixPath};
 
 use core::raw::Slice as RawSlice;
-use utils::ToCStr;
 use std::ffi::CString; 
 
 #[cfg(target_os = "linux")]
@@ -216,9 +215,10 @@ fn dup3_polyfill(oldfd: Fd, newfd: Fd, flags: OFlag) -> NixResult<Fd> {
 }
 
 #[inline]
-pub fn chdir<S: ToCStr>(path: S) -> NixResult<()> {
-    let path = path.to_c_str();
-    let res = unsafe { ffi::chdir(path.as_ptr()) };
+pub fn chdir<P: NixPath>(path: P) -> NixResult<()> {
+    let res = try!(path.with_nix_path(|ptr| {
+        unsafe { ffi::chdir(ptr) }
+    }));
 
     if res != 0 {
         return Err(NixError::Sys(errno::last()));

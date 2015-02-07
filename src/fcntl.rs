@@ -1,9 +1,8 @@
 use std::old_path::Path;
 use libc::{c_int, mode_t};
 use errno;
-use {NixError, NixResult};
+use {NixError, NixResult, NixPath};
 use sys::stat::Mode;
-use utils::ToCStr;
 
 pub use self::consts::*;
 pub use self::ffi::flock;
@@ -72,8 +71,12 @@ mod ffi {
     }
 }
 
-pub fn open(path: &Path, oflag: OFlag, mode: Mode) -> NixResult<Fd> {
-    let fd = unsafe { ffi::open(path.to_c_str().as_ptr(), oflag.bits(), mode.bits() as mode_t) };
+pub fn open<P: NixPath>(path: P, oflag: OFlag, mode: Mode) -> NixResult<Fd> {
+    let fd = try!(path.with_nix_path(|ptr| {
+        unsafe {
+            ffi::open(ptr, oflag.bits(), mode.bits() as mode_t)
+        }
+    }));
 
     if fd < 0 {
         return Err(NixError::Sys(errno::last()));
