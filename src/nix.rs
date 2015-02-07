@@ -36,3 +36,14 @@ impl<'a> NixPath for &'a [u8] {
         }
     }
 }
+
+impl<P: NixPath> NixPath for Option<P> {
+    fn with_nix_path<T, F>(&self, f: F) -> Result<T, NixError>
+        where F: FnOnce(*const c_char) -> T
+    {
+        match *self {
+            Some(ref some) => some.with_nix_path(f),
+            None           => b"".with_nix_path(f)
+        }
+    }
+}
