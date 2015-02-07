@@ -427,18 +427,19 @@ pub fn isatty(fd: Fd) -> NixResult<bool> {
 
 #[cfg(target_os = "linux")]
 mod linux {
-    use std::old_path::Path;
     use syscall::{syscall, SYSPIVOTROOT};
-    use errno::{self, NixResult, SysError};
-    use utils::ToCStr;
+    use errno;
+    use {NixError, NixResult, NixPath};
 
-    pub fn pivot_root(new_root: &Path, put_old: &Path) -> NixResult<()> {
-        let new_root = new_root.to_c_str();
-        let put_old = put_old.to_c_str();
-
-        let res = unsafe {
-            syscall(SYSPIVOTROOT, new_root.as_ptr(), put_old.as_ptr())
-        };
+    pub fn pivot_root<P1: NixPath, P2: NixPath>(new_root: P1,
+                                                put_old: P2) -> NixResult<()> {
+        let res = try!(try!(new_root.with_nix_path(|new_root| {
+            put_old.with_nix_path(|put_old| {
+                unsafe {
+                    syscall(SYSPIVOTROOT, new_root, put_old)
+                }
+            })
+        })));
 
         if res != 0 {
             return Err(NixError::Sys(errno::last()));

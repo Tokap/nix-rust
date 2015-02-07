@@ -1,6 +1,7 @@
 use std::mem;
 use libc::{c_int, c_uint, c_void, c_ulong};
-use super::{NixResult, SysError};
+use errno;
+use {NixResult, NixError};
 
 pub type CloneFlags = c_uint;
 

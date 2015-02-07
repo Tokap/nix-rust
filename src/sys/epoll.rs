@@ -1,6 +1,7 @@
 use std::fmt;
 use libc::c_int;
 use errno;
+use {NixError, NixResult};
 use fcntl::Fd;
 
 mod ffi {

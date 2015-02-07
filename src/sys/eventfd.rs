@@ -2,6 +2,7 @@ use std::mem;
 use libc::{c_int, c_uint};
 use errno;
 use fcntl::Fd;
+use {NixError, NixResult};
 
 bitflags!(
     flags EventFdFlag: c_int {
