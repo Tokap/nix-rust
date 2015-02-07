@@ -1,4 +1,3 @@
-use std::fmt;
 use std::os::errno;
 use std::num::from_uint;
 use libc::c_int;

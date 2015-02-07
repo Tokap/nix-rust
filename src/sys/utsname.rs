@@ -2,8 +2,6 @@ use std::mem;
 use libc::{c_char};
 use std::ffi::{c_str_to_bytes_with_nul};
 use std::str::from_utf8_unchecked; 
-use errno;
-use {NixError, NixResult};
 
 mod ffi {
     use libc::c_int;

@@ -1,7 +1,7 @@
 use libc;
 use errno;
 use fcntl::Fd;
-use {NixError, NixResult};
+use NixResult;
 
 pub use self::ffi::Winsize;
 pub use self::IoctlArg::*;

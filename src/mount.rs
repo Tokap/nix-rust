@@ -1,8 +1,6 @@
-use std::ptr;
-use std::old_path::Path;
 use libc::{c_ulong, c_int, c_void};
 use errno;
-use {NixError, NixResult, NixPath};
+use {NixResult, NixPath};
 
 bitflags!(
     flags MsFlags: c_ulong {

@@ -1,4 +1,3 @@
-use std::old_path::Path;
 use libc::{c_int, mode_t};
 use errno;
 use {NixError, NixResult, NixPath};
