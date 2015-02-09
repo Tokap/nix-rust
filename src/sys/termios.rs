@@ -1,8 +1,8 @@
-use errno::{self, Errno};
+use errno::Errno;
 use fcntl::Fd;
 use libc::c_int;
 use std::mem;
-use {NixError, NixResult};
+use {NixError, NixResult, from_ffi};
 
 pub use self::ffi::consts::*;
 pub use self::ffi::consts::SetArg::*;
@@ -363,13 +363,13 @@ pub fn cfgetospeed(termios: &Termios) -> speed_t {
 }
 
 pub fn cfsetispeed(termios: &mut Termios, speed: speed_t) -> NixResult<()> {
-    errno::from_ffi(unsafe {
+    from_ffi(unsafe {
         ffi::cfsetispeed(termios, speed)
     })
 }
 
 pub fn cfsetospeed(termios: &mut Termios, speed: speed_t) -> NixResult<()> {
-    errno::from_ffi(unsafe {
+    from_ffi(unsafe {
         ffi::cfsetospeed(termios, speed)
     })
 }
@@ -391,31 +391,31 @@ pub fn tcgetattr(fd: Fd) -> NixResult<Termios> {
 pub fn tcsetattr(fd: Fd,
                  actions: SetArg,
                  termios: &Termios) -> NixResult<()> {
-    errno::from_ffi(unsafe {
+    from_ffi(unsafe {
         ffi::tcsetattr(fd, actions as c_int, termios)
     })
 }
 
 pub fn tcdrain(fd: Fd) -> NixResult<()> {
-    errno::from_ffi(unsafe {
+    from_ffi(unsafe {
         ffi::tcdrain(fd)
     })
 }
 
 pub fn tcflow(fd: Fd, action: FlowArg) -> NixResult<()> {
-    errno::from_ffi(unsafe {
+    from_ffi(unsafe {
         ffi::tcflow(fd, action as c_int)
     })
 }
 
 pub fn tcflush(fd: Fd, action: FlushArg) -> NixResult<()> {
-    errno::from_ffi(unsafe {
+    from_ffi(unsafe {
         ffi::tcflush(fd, action as c_int)
     })
 }
 
 pub fn tcsendbreak(fd: Fd, action: c_int) -> NixResult<()> {
-    errno::from_ffi(unsafe {
+    from_ffi(unsafe {
         ffi::tcsendbreak(fd, action)
     })
 }

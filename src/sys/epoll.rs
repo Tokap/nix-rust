@@ -1,7 +1,7 @@
 use std::fmt;
 use libc::c_int;
-use errno::{self, Errno};
-use {NixError, NixResult};
+use errno::Errno;
+use {NixError, NixResult, from_ffi};
 use fcntl::Fd;
 
 mod ffi {
@@ -99,7 +99,7 @@ pub fn epoll_create() -> NixResult<Fd> {
 #[inline]
 pub fn epoll_ctl(epfd: Fd, op: EpollOp, fd: Fd, event: &EpollEvent) -> NixResult<()> {
     let res = unsafe { ffi::epoll_ctl(epfd, op as c_int, fd, event as *const EpollEvent) };
-    errno::from_ffi(res)
+    from_ffi(res)
 }
 
 #[inline]

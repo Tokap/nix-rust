@@ -1,8 +1,5 @@
 use std::os::errno;
 use std::num::from_uint;
-use libc::c_int;
-
-use {NixError, NixResult};
 
 pub use self::consts::*;
 pub use self::consts::Errno::*;
@@ -396,16 +393,6 @@ fn desc(errno: Errno) -> &'static str {
         EQFULL          => "Interface output queue is full",
     }
 }
-
-#[inline]
-pub fn from_ffi(res: c_int) -> NixResult<()> {
-    if res != 0 {
-        return Err(NixError::Sys(last()));
-    }
-
-    Ok(())
-}
-
 
 #[cfg(target_os = "linux")]
 mod consts {

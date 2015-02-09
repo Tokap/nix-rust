@@ -3,10 +3,10 @@ pub use libc::stat as FileStat;
 
 use std::fmt;
 use std::mem;
-use errno::{self, Errno};
+use errno::Errno;
 use libc::mode_t;
 use fcntl::Fd;
-use {NixError, NixResult, NixPath};
+use {NixError, NixResult, NixPath, from_ffi};
 
 mod ffi {
     use libc::{c_char, c_int, mode_t, dev_t};
@@ -63,7 +63,7 @@ pub fn mknod<P: NixPath>(path: P, kind: SFlag, perm: Mode, dev: dev_t) -> NixRes
             ffi::mknod(ptr, kind.bits | perm.bits() as mode_t, dev)
         }
     }));
-    errno::from_ffi(res)
+    from_ffi(res)
 }
 
 #[cfg(target_os = "linux")]

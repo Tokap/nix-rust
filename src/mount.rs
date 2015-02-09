@@ -1,6 +1,5 @@
 use libc::{c_ulong, c_int, c_void};
-use errno;
-use {NixResult, NixPath};
+use {NixResult, NixPath, from_ffi};
 
 bitflags!(
     flags MsFlags: c_ulong {
@@ -92,7 +91,7 @@ pub fn mount<P1: NixPath, P2: NixPath, P3: NixPath, P4: NixPath>(
             })
         })))));
 
-    return errno::from_ffi(res);
+    return from_ffi(res);
 }
 
 pub fn umount<P: NixPath>(target: P) -> NixResult<()> {
@@ -100,7 +99,7 @@ pub fn umount<P: NixPath>(target: P) -> NixResult<()> {
         unsafe { ffi::umount(ptr) }
     }));
 
-    errno::from_ffi(res)
+    from_ffi(res)
 }
 
 pub fn umount2<P: NixPath>(target: P, flags: MntFlags) -> NixResult<()> {
@@ -108,5 +107,5 @@ pub fn umount2<P: NixPath>(target: P, flags: MntFlags) -> NixResult<()> {
         unsafe { ffi::umount2(ptr, flags.bits) }
     }));
 
-    errno::from_ffi(res)
+    from_ffi(res)
 }

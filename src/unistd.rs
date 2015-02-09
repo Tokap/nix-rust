@@ -1,12 +1,12 @@
 use std::{mem, ptr};
 use libc::{c_char, c_void, c_int, size_t, pid_t, off_t};
-use errno::{self, Errno};
+use errno::Errno;
 use fcntl::{fcntl, Fd, OFlag, O_NONBLOCK, O_CLOEXEC, FD_CLOEXEC};
 use fcntl::FcntlArg::{F_SETFD, F_SETFL};
-use {NixError, NixResult, NixPath};
+use {NixError, NixResult, NixPath, from_ffi};
 
 use core::raw::Slice as RawSlice;
-use std::ffi::CString; 
+use std::ffi::CString;
 
 #[cfg(target_os = "linux")]
 pub use self::linux::*;
@@ -199,7 +199,7 @@ fn dup3_polyfill(oldfd: Fd, newfd: Fd, flags: OFlag) -> NixResult<Fd> {
     use errno::EINVAL;
 
     if oldfd == newfd {
-        return Err(NixError::Sys(errno::EINVAL));
+        return Err(NixError::Sys(Errno::EINVAL));
     }
 
     let fd = try!(dup2(oldfd, newfd));
@@ -248,7 +248,7 @@ pub fn execve(filename: &CString, args: &[CString], env: &[CString]) -> NixResul
 
 pub fn daemon(nochdir: bool, noclose: bool) -> NixResult<()> {
     let res = unsafe { ffi::daemon(nochdir as c_int, noclose as c_int) };
-    errno::from_ffi(res)
+    from_ffi(res)
 }
 
 pub fn sethostname(name: &[u8]) -> NixResult<()> {
@@ -256,7 +256,7 @@ pub fn sethostname(name: &[u8]) -> NixResult<()> {
     let len = name.len() as size_t;
 
     let res = unsafe { ffi::sethostname(ptr, len) };
-    errno::from_ffi(res)
+    from_ffi(res)
 }
 
 pub fn gethostname(name: &mut [u8]) -> NixResult<()> {
@@ -264,12 +264,12 @@ pub fn gethostname(name: &mut [u8]) -> NixResult<()> {
     let len = name.len() as size_t;
 
     let res = unsafe { ffi::gethostname(ptr, len) };
-    errno::from_ffi(res)
+    from_ffi(res)
 }
 
 pub fn close(fd: Fd) -> NixResult<()> {
     let res = unsafe { ffi::close(fd) };
-    errno::from_ffi(res)
+    from_ffi(res)
 }
 
 pub fn read(fd: Fd, buf: &mut [u8]) -> NixResult<usize> {
@@ -419,7 +419,7 @@ pub fn isatty(fd: Fd) -> NixResult<bool> {
         match Errno::last() {
             // ENOTTY means `fd` is a valid file descriptor, but not a TTY, so
             // we return `Ok(false)`
-            errno::ENOTTY => Ok(false),
+            Errno::ENOTTY => Ok(false),
             err => Err(NixError::Sys(err))
         }
     }

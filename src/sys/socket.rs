@@ -1,10 +1,10 @@
 use std::{mem, ptr, fmt};
 use libc::{c_void, c_int, socklen_t, size_t, ssize_t};
-use errno::{self, Errno};
+use errno::Errno;
 use fcntl::{Fd, fcntl, FD_CLOEXEC, O_NONBLOCK};
 use fcntl::FcntlArg::{F_SETFD, F_SETFL};
 use features;
-use {NixError, NixResult};
+use {NixError, NixResult, from_ffi};
 
 pub use libc::{in_addr, sockaddr, sockaddr_storage, sockaddr_in, sockaddr_in6, sockaddr_un, sa_family_t, ip_mreq};
 
@@ -255,7 +255,7 @@ pub fn socket(domain: AddressFamily, mut ty: SockType, flags: SockFlag) -> NixRe
 
 pub fn listen(sockfd: Fd, backlog: usize) -> NixResult<()> {
     let res = unsafe { ffi::listen(sockfd, backlog as c_int) };
-    errno::from_ffi(res)
+    from_ffi(res)
 }
 
 pub fn bind(sockfd: Fd, addr: &SockAddr) -> NixResult<()> {
@@ -269,7 +269,7 @@ pub fn bind(sockfd: Fd, addr: &SockAddr) -> NixResult<()> {
         }
     };
 
-    errno::from_ffi(res)
+    from_ffi(res)
 }
 
 pub fn accept(sockfd: Fd) -> NixResult<Fd> {
@@ -344,7 +344,7 @@ pub fn connect(sockfd: Fd, addr: &SockAddr) -> NixResult<()> {
         }
     };
 
-    errno::from_ffi(res)
+    from_ffi(res)
 }
 
 mod sa_helpers {
@@ -478,7 +478,7 @@ pub fn setsockopt<T>(fd: Fd, level: SockLevel, opt: SockOpt, val: &T) -> NixResu
             len)
     };
 
-    errno::from_ffi(res)
+    from_ffi(res)
 }
 
 fn getpeername_sockaddr<T>(sockfd: Fd, addr: &T) -> NixResult<bool> {
