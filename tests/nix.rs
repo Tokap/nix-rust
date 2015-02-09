@@ -1,7 +1,7 @@
 extern crate nix;
 extern crate libc;
 
-use nix::nix::NixPath;
+use nix::NixPath;
 
 #[test]
 fn test_nix_path() {

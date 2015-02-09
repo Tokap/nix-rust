@@ -10,7 +10,7 @@ extern crate core;
 // Re-export some libc constants
 pub use libc::{c_int, c_void};
 
-pub mod nix;
+mod nix;
 pub use nix::{NixResult, NixError, NixPath};
 
 #[cfg(unix)]
