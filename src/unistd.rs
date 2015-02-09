@@ -1,6 +1,6 @@
 use std::{mem, ptr};
 use libc::{c_char, c_void, c_int, size_t, pid_t, off_t};
-use errno;
+use errno::{self, Errno};
 use fcntl::{fcntl, Fd, OFlag, O_NONBLOCK, O_CLOEXEC, FD_CLOEXEC};
 use fcntl::FcntlArg::{F_SETFD, F_SETFL};
 use {NixError, NixResult, NixPath};
@@ -82,7 +82,7 @@ pub fn fork() -> NixResult<Fork> {
     let res = unsafe { ffi::fork() };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     } else if res == 0 {
         Ok(Child)
     } else {
@@ -147,7 +147,7 @@ pub fn dup(oldfd: Fd) -> NixResult<Fd> {
     let res = unsafe { ffi::dup(oldfd) };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(res)
@@ -158,7 +158,7 @@ pub fn dup2(oldfd: Fd, newfd: Fd) -> NixResult<Fd> {
     let res = unsafe { ffi::dup2(oldfd, newfd) };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(res)
@@ -180,7 +180,7 @@ pub fn dup3(oldfd: Fd, newfd: Fd, flags: OFlag) -> NixResult<Fd> {
         };
 
         if res < 0 {
-            return Err(NixError::Sys(errno::last()));
+            return Err(NixError::Sys(Errno::last()));
         }
 
         Ok(res)
@@ -221,7 +221,7 @@ pub fn chdir<P: NixPath>(path: P) -> NixResult<()> {
     }));
 
     if res != 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     return Ok(())
@@ -240,7 +240,7 @@ pub fn execve(filename: &CString, args: &[CString], env: &[CString]) -> NixResul
     };
 
     if res != 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     unreachable!()
@@ -276,7 +276,7 @@ pub fn read(fd: Fd, buf: &mut [u8]) -> NixResult<usize> {
     let res = unsafe { ffi::read(fd, buf.as_mut_ptr() as *mut c_void, buf.len() as size_t) };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     return Ok(res as usize)
@@ -286,7 +286,7 @@ pub fn write(fd: Fd, buf: &[u8]) -> NixResult<usize> {
     let res = unsafe { ffi::write(fd, buf.as_ptr() as *const c_void, buf.len() as size_t) };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     return Ok(res as usize)
@@ -295,7 +295,7 @@ pub fn write(fd: Fd, buf: &[u8]) -> NixResult<usize> {
 pub fn writev(fd: Fd, iov: &[Iovec<ToWrite>]) -> NixResult<usize> {
     let res = unsafe { ffi::writev(fd, iov.as_ptr(), iov.len() as c_int) };
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     return Ok(res as usize)
@@ -304,7 +304,7 @@ pub fn writev(fd: Fd, iov: &[Iovec<ToWrite>]) -> NixResult<usize> {
 pub fn readv(fd: Fd, iov: &mut [Iovec<ToRead>]) -> NixResult<usize> {
     let res = unsafe { ffi::readv(fd, iov.as_ptr(), iov.len() as c_int) };
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     return Ok(res as usize)
@@ -318,7 +318,7 @@ pub fn pipe() -> NixResult<(Fd, Fd)> {
         res = ffi::pipe(fds.as_mut_ptr());
 
         if res < 0 {
-            return Err(NixError::Sys(errno::last()));
+            return Err(NixError::Sys(Errno::last()));
         }
 
         Ok((fds[0], fds[1]))
@@ -348,7 +348,7 @@ pub fn pipe2(flags: OFlag) -> NixResult<(Fd, Fd)> {
         }
 
         if res < 0 {
-            return Err(NixError::Sys(errno::last()));
+            return Err(NixError::Sys(Errno::last()));
         }
 
         if !feat_atomic {
@@ -368,7 +368,7 @@ pub fn pipe2(flags: OFlag) -> NixResult<(Fd, Fd)> {
         res = ffi::pipe(fds.as_mut_ptr());
 
         if res < 0 {
-            return Err(NixError::Sys(errno::last()));
+            return Err(NixError::Sys(Errno::last()));
         }
 
         try!(pipe2_setflags(fds[0], fds[1], flags));
@@ -404,7 +404,7 @@ fn pipe2_setflags(fd1: Fd, fd2: Fd, flags: OFlag) -> NixResult<()> {
 
 pub fn ftruncate(fd: Fd, len: off_t) -> NixResult<()> {
     if unsafe { ffi::ftruncate(fd, len) } < 0 {
-        Err(NixError::Sys(errno::last()))
+        Err(NixError::Sys(Errno::last()))
     } else {
         Ok(())
     }
@@ -416,7 +416,7 @@ pub fn isatty(fd: Fd) -> NixResult<bool> {
     if unsafe { libc::isatty(fd) } == 1 {
         Ok(true)
     } else {
-        match errno::last() {
+        match Errno::last() {
             // ENOTTY means `fd` is a valid file descriptor, but not a TTY, so
             // we return `Ok(false)`
             errno::ENOTTY => Ok(false),
@@ -428,7 +428,7 @@ pub fn isatty(fd: Fd) -> NixResult<bool> {
 #[cfg(target_os = "linux")]
 mod linux {
     use syscall::{syscall, SYSPIVOTROOT};
-    use errno;
+    use errno::Errno;
     use {NixError, NixResult, NixPath};
 
     pub fn pivot_root<P1: NixPath, P2: NixPath>(new_root: P1,
@@ -442,7 +442,7 @@ mod linux {
         })));
 
         if res != 0 {
-            return Err(NixError::Sys(errno::last()));
+            return Err(NixError::Sys(Errno::last()));
         }
 
         Ok(())

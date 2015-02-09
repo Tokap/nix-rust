@@ -7,11 +7,25 @@ use {NixError, NixResult};
 pub use self::consts::*;
 pub use self::consts::Errno::*;
 
-pub fn last() -> Errno {
+macro_rules! impl_errno {
+    ($errno:ty) => {
+        impl $errno {
+            pub fn last() -> Errno {
+                super::last()
+            }
+
+            pub fn desc(self) -> &'static str {
+                super::desc(self)
+            }
+        }
+    }
+}
+
+fn last() -> Errno {
     from_uint(errno()).unwrap_or(UnknownErrno)
 }
 
-pub fn desc(errno: Errno) -> &'static str {
+fn desc(errno: Errno) -> &'static str {
     match errno {
         UnknownErrno    => "Unknown errno",
         EPERM           => "Operation not permitted",
@@ -531,6 +545,8 @@ mod consts {
         EHWPOISON       = 133,
     }
 
+    impl_errno!(Errno);
+
     pub const EWOULDBLOCK: Errno = Errno::EAGAIN;
     pub const EDEADLOCK:   Errno = Errno::EDEADLK;
 }
@@ -647,6 +663,8 @@ mod consts {
         EOWNERDEAD      = 105,
         EQFULL          = 106,
     }
+
+    impl_errno!(Errno);
 
     pub const ELAST: Errno       = Errno::EQFULL;
     pub const EWOULDBLOCK: Errno = Errno::EAGAIN;

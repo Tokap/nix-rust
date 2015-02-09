@@ -2,7 +2,7 @@
 // See http://rust-lang.org/COPYRIGHT.
 
 use libc;
-use errno;
+use errno::Errno;
 use core::mem;
 use {NixError, NixResult};
 
@@ -316,7 +316,7 @@ impl SigSet {
         let res = unsafe { ffi::sigaddset(&mut self.sigset as *mut sigset_t, signum) };
 
         if res < 0 {
-            return Err(NixError::Sys(errno::last()));
+            return Err(NixError::Sys(Errno::last()));
         }
 
         Ok(())
@@ -326,7 +326,7 @@ impl SigSet {
         let res = unsafe { ffi::sigdelset(&mut self.sigset as *mut sigset_t, signum) };
 
         if res < 0 {
-            return Err(NixError::Sys(errno::last()));
+            return Err(NixError::Sys(Errno::last()));
         }
 
         Ok(())
@@ -358,7 +358,7 @@ pub fn sigaction(signum: SigNum, sigaction: &SigAction) -> NixResult<SigAction> 
     };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(SigAction { sigaction: oldact })
@@ -368,7 +368,7 @@ pub fn kill(pid: libc::pid_t, signum: SigNum) -> NixResult<()> {
     let res = unsafe { ffi::kill(pid, signum) };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(())

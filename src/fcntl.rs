@@ -1,5 +1,5 @@
 use libc::{c_int, mode_t};
-use errno;
+use errno::Errno;
 use {NixError, NixResult, NixPath};
 use sys::stat::Mode;
 
@@ -78,7 +78,7 @@ pub fn open<P: NixPath>(path: P, oflag: OFlag, mode: Mode) -> NixResult<Fd> {
     }));
 
     if fd < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(fd)
@@ -117,7 +117,7 @@ pub fn fcntl(fd: Fd, arg: FcntlArg) -> NixResult<()> {
     };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(())

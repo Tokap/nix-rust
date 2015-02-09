@@ -1,4 +1,4 @@
-use errno;
+use errno::{self, Errno};
 use fcntl::Fd;
 use libc::c_int;
 use std::mem;
@@ -382,7 +382,7 @@ pub fn tcgetattr(fd: Fd) -> NixResult<Termios> {
     };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(termios)

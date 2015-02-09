@@ -3,7 +3,7 @@ pub use libc::stat as FileStat;
 
 use std::fmt;
 use std::mem;
-use errno;
+use errno::{self, Errno};
 use libc::mode_t;
 use fcntl::Fd;
 use {NixError, NixResult, NixPath};
@@ -88,7 +88,7 @@ pub fn stat<P: NixPath>(path: P) -> NixResult<FileStat> {
     }));
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(dst)
@@ -99,7 +99,7 @@ pub fn fstat(fd: Fd) -> NixResult<FileStat> {
     let res = unsafe { ffi::fstat(fd, &mut dst as *mut FileStat) };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(dst)

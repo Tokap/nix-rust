@@ -1,4 +1,4 @@
-use errno;
+use errno::Errno;
 use fcntl::{Fd, OFlag};
 use libc::{c_void, size_t, off_t, mode_t};
 use sys::stat::Mode;
@@ -131,14 +131,14 @@ mod ffi {
 pub unsafe fn mlock(addr: *const c_void, length: size_t) -> NixResult<()> {
     match ffi::mlock(addr, length) {
         0 => Ok(()),
-        _ => Err(NixError::Sys(errno::last()))
+        _ => Err(NixError::Sys(Errno::last()))
     }
 }
 
 pub fn munlock(addr: *const c_void, length: size_t) -> NixResult<()> {
     match unsafe { ffi::munlock(addr, length) } {
         0 => Ok(()),
-        _ => Err(NixError::Sys(errno::last()))
+        _ => Err(NixError::Sys(Errno::last()))
     }
 }
 
@@ -148,7 +148,7 @@ pub fn mmap(addr: *mut c_void, length: size_t, prot: MmapProt, flags: MmapFlag, 
     let ret = unsafe { ffi::mmap(addr, length, prot, flags, fd, offset) };
 
     if ret as isize == MAP_FAILED  {
-        Err(NixError::Sys(errno::last()))
+        Err(NixError::Sys(Errno::last()))
     } else {
         Ok(ret)
     }
@@ -157,21 +157,21 @@ pub fn mmap(addr: *mut c_void, length: size_t, prot: MmapProt, flags: MmapFlag, 
 pub fn munmap(addr: *mut c_void, len: size_t) -> NixResult<()> {
     match unsafe { ffi::munmap(addr, len) } {
         0 => Ok(()),
-        _ => Err(NixError::Sys(errno::last()))
+        _ => Err(NixError::Sys(Errno::last()))
     }
 }
 
 pub fn madvise(addr: *const c_void, length: size_t, advise: MmapAdvise) -> NixResult<()> {
     match unsafe { ffi::madvise(addr, length, advise) } {
         0 => Ok(()),
-        _ => Err(NixError::Sys(errno::last()))
+        _ => Err(NixError::Sys(Errno::last()))
     }
 }
 
 pub fn msync(addr: *const c_void, length: size_t, flags: MmapSync) -> NixResult<()> {
     match unsafe { ffi::msync(addr, length, flags) } {
         0 => Ok(()),
-        _ => Err(NixError::Sys(errno::last()))
+        _ => Err(NixError::Sys(Errno::last()))
     }
 }
 
@@ -183,7 +183,7 @@ pub fn shm_open<P: NixPath>(name: P, flag: OFlag, mode: Mode) -> NixResult<Fd> {
     }));
 
     if ret < 0 {
-        Err(NixError::Sys(errno::last()))
+        Err(NixError::Sys(Errno::last()))
     } else {
         Ok(ret)
     }
@@ -195,7 +195,7 @@ pub fn shm_unlink<P: NixPath>(name: P) -> NixResult<()> {
     }));
 
     if ret < 0 {
-        Err(NixError::Sys(errno::last()))
+        Err(NixError::Sys(Errno::last()))
     } else {
         Ok(())
     }

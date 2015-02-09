@@ -1,5 +1,5 @@
 use libc::{pid_t, c_int};
-use errno;
+use errno::Errno;
 use {NixError, NixResult};
 
 mod ffi {
@@ -35,7 +35,7 @@ pub fn waitpid(pid: pid_t, options: Option<WaitPidFlag>) -> NixResult<WaitStatus
     let res = unsafe { ffi::waitpid(pid as pid_t, &mut status as *mut c_int, option_bits) };
 
     if res < 0 {
-        Err(NixError::Sys(errno::last()))
+        Err(NixError::Sys(Errno::last()))
     } else if res == 0 {
         Ok(StillAlive)
     } else {

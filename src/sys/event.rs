@@ -2,7 +2,7 @@
  */
 
 use libc::{timespec, time_t, c_int, c_long, uintptr_t};
-use errno;
+use errno::Errno;
 use fcntl::Fd;
 use std::fmt;
 use {NixError, NixResult};
@@ -163,7 +163,7 @@ pub fn kqueue() -> NixResult<Fd> {
     let res = unsafe { ffi::kqueue() };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(res)
@@ -191,7 +191,7 @@ pub fn kevent(kq: Fd,
     };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     return Ok(res as usize)

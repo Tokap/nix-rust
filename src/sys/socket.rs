@@ -1,6 +1,6 @@
 use std::{mem, ptr, fmt};
 use libc::{c_void, c_int, socklen_t, size_t, ssize_t};
-use errno;
+use errno::{self, Errno};
 use fcntl::{Fd, fcntl, FD_CLOEXEC, O_NONBLOCK};
 use fcntl::FcntlArg::{F_SETFD, F_SETFL};
 use features;
@@ -237,7 +237,7 @@ pub fn socket(domain: AddressFamily, mut ty: SockType, flags: SockFlag) -> NixRe
     let res = unsafe { ffi::socket(domain, ty, 0) };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     if !feat_atomic {
@@ -276,7 +276,7 @@ pub fn accept(sockfd: Fd) -> NixResult<Fd> {
     let res = unsafe { ffi::accept(sockfd, ptr::null_mut(), ptr::null_mut()) };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(res)
@@ -300,7 +300,7 @@ pub fn accept4(sockfd: Fd, flags: SockFlag) -> NixResult<Fd> {
         };
 
         if res < 0 {
-            return Err(NixError::Sys(errno::last()));
+            return Err(NixError::Sys(Errno::last()));
         }
 
         Ok(res)
@@ -319,7 +319,7 @@ fn accept4_polyfill(sockfd: Fd, flags: SockFlag) -> NixResult<Fd> {
     let res =  unsafe { ffi::accept(sockfd, ptr::null_mut(), ptr::null_mut()) };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     if flags.contains(SOCK_CLOEXEC) {
@@ -378,7 +378,7 @@ pub fn recvfrom(sockfd: Fd, buf: &mut [u8]) -> NixResult<(usize, SockAddr)> {
     };
 
     if ret < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok((ret as usize,
@@ -438,7 +438,7 @@ pub fn sendto(sockfd: Fd, buf: &[u8], addr: &SockAddr, flags: SockMessageFlags) 
     };
 
     if ret < 0 {
-        Err(NixError::Sys(errno::last()))
+        Err(NixError::Sys(Errno::last()))
     } else {
         Ok(ret as usize)
     }
@@ -462,7 +462,7 @@ pub fn getsockopt<T>(fd: Fd, level: SockLevel, opt: SockOpt, val: &mut T) -> Nix
     };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(len as usize)
@@ -487,7 +487,7 @@ fn getpeername_sockaddr<T>(sockfd: Fd, addr: &T) -> NixResult<bool> {
 
     let ret = unsafe { ffi::getpeername(sockfd, mem::transmute(addr), &mut addrlen) };
     if ret < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(addrlen == addrlen_expected)
@@ -509,7 +509,7 @@ fn getsockname_sockaddr<T>(sockfd: Fd, addr: &T) -> NixResult<bool> {
 
     let ret = unsafe { ffi::getsockname(sockfd, mem::transmute(addr), &mut addrlen) };
     if ret < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(addrlen == addrlen_expected)

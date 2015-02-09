@@ -1,6 +1,6 @@
 use std::mem;
 use libc::{c_int, c_uint};
-use errno;
+use errno::Errno;
 use fcntl::Fd;
 use {NixError, NixResult};
 
@@ -30,7 +30,7 @@ pub fn eventfd(initval: usize, flags: EventFdFlag) -> NixResult<Fd> {
     };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(res)

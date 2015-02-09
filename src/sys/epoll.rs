@@ -1,6 +1,6 @@
 use std::fmt;
 use libc::c_int;
-use errno;
+use errno::{self, Errno};
 use {NixError, NixResult};
 use fcntl::Fd;
 
@@ -90,7 +90,7 @@ pub fn epoll_create() -> NixResult<Fd> {
     let res = unsafe { ffi::epoll_create(1024) };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(res)
@@ -109,7 +109,7 @@ pub fn epoll_wait(epfd: Fd, events: &mut [EpollEvent], timeout_ms: usize) -> Nix
     };
 
     if res < 0 {
-        return Err(NixError::Sys(errno::last()));
+        return Err(NixError::Sys(Errno::last()));
     }
 
     Ok(res as usize)
